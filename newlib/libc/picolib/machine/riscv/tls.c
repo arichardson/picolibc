@@ -41,5 +41,9 @@
 void
 _set_tls(void *tls)
 {
+#ifdef __CHERI_PURE_CAPABILITY__
+	__asm__("cmove ctp, %0" : : "C" (tls));
+#else
 	__asm__("mv tp, %0" : : "r" (tls));
+#endif
 }

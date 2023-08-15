@@ -61,8 +61,8 @@ _cstart(void)
 #endif
 
 struct fault {
-        unsigned long   r[NUM_REG];
-        unsigned long   mepc;
+        uintptr_t       r[NUM_REG];
+        uintptr_t       mepc;
         unsigned long   mcause;
         unsigned long   mtval;
 };
@@ -83,8 +83,8 @@ _ctrap(struct fault *fault)
         int r;
         printf("RISCV fault\n");
         for (r = 0; r < NUM_REG; r++)
-                printf("\tx%d %-5.5s%s 0x" FMT "\n", r, names[r], r < 10 ? " " : "", fault->r[r]);
-        printf("\tmepc:     0x" FMT "\n", fault->mepc);
+                printf("\tx%d %-5.5s%s 0x" FMT "\n", r, names[r], r < 10 ? " " : "", (unsigned long)fault->r[r]);
+        printf("\tmepc:     0x" FMT "\n", (unsigned long)fault->mepc);
         printf("\tmcause:   0x" FMT "\n", fault->mcause);
         printf("\tmtval:    0x" FMT "\n", fault->mtval);
         _exit(1);
@@ -103,19 +103,36 @@ _trap(void)
         /* Build a known-working C environment */
 	__asm__(".option	push\n"
                 ".option	norelax\n"
+#ifdef __CHERI_PURE_CAPABILITY__
+                "cspecialrw  csp, mscratchc, csp\n"
+                "cllc	csp, __heap_end\n"
+#else
                 "csrrw  sp, mscratch, sp\n"
                 "la	sp, __heap_end\n"
+#endif
                 ".option	pop");
 
         /* Make space for saved registers */
-        __asm__("addi   sp, sp, %0\n"
-                ".cfi_def_cfa sp, 0\n"
-                :: "i"(-sizeof(struct fault)));
+        __asm__(
+#ifdef __CHERI_PURE_CAPABILITY__
+            "cincoffset csp, csp, %0\n"
+            ".cfi_def_cfa csp, 0\n"
+#else
+            "addi   sp, sp, %0\n"
+            ".cfi_def_cfa sp, 0\n"
+#endif
+            :: "i" (-sizeof(struct fault)));
 
         /* Save registers on stack */
+#ifdef __CHERI_PURE_CAPABILITY__
 #define SAVE_REG(num)   \
-        __asm__(SD"     x%0, %1(sp)" :: "i" (num), \
-                "i" ((num) * sizeof(unsigned long) + offsetof(struct fault, r)))
+        __asm__("csc c%0, %1(csp)\n.cfi_offset c%0, %1" :: "i" (num), \
+                "i" ((num) * sizeof(uintptr_t) + offsetof(struct fault, r)))
+#else
+#define SAVE_REG(num)   \
+        __asm__(SD"     x%0, %1(sp)\n.cfi_offset x%0, %1" :: "i" (num), \
+                "i" ((num) * sizeof(uintptr_t) + offsetof(struct fault, r)))
+#endif
 
 #define SAVE_REGS_8(base) \
         SAVE_REG(base+0); SAVE_REG(base+1); SAVE_REG(base+2); SAVE_REG(base+3); \
@@ -128,20 +145,36 @@ _trap(void)
         SAVE_REGS_8(24);
 #endif
 
+#ifdef __CHERI_PURE_CAPABILITY__
+#define SAVE_CSR(name)  \
+        __asm__("csrr   t0, "PASTE(name));\
+        __asm__("c" SD "  t0, %0(csp)" :: "i" (offsetof(struct fault, name)))
+#else
 #define SAVE_CSR(name)  \
         __asm__("csrr   t0, "PASTE(name));\
         __asm__(SD"  t0, %0(sp)" :: "i" (offsetof(struct fault, name)))
+#endif
 
         /*
          * Save the trapping frame's stack pointer that was stashed in mscratch
          * and tell the unwinder where we can find the return address (mepc).
          */
+#ifdef __CHERI_PURE_CAPABILITY__
+    __asm__("cspecialr ct0, mepcc\n"
+            "csc ct0, %0(csp)\n"
+            ".cfi_offset cra, %0\n"
+            "cmove ct0, cnull\n"
+            "cspecialrw ct0, mscratchc, ct0\n"
+            "csc ct0, %1(csp)\n"
+            ".cfi_offset csp, %1\n"
+#else
         __asm__("csrr   ra, mepc\n"
                 SD "    ra, %0(sp)\n"
                 ".cfi_offset ra, %0\n"
                 "csrrw t0, mscratch, zero\n"
                 SD "    t0, %1(sp)\n"
                 ".cfi_offset sp, %1\n"
+#endif
                 :: "i"(offsetof(struct fault, mepc)),
                    "i"(offsetof(struct fault, r[2])));
         SAVE_CSR(mcause);
@@ -150,8 +183,12 @@ _trap(void)
         /*
          * Pass pointer to saved registers in first parameter register
          */
+#ifdef __CHERI_PURE_CAPABILITY__
+        __asm__("cmove  ca0, csp");
+#else
         __asm__("la	gp, __global_pointer$");
         __asm__("mv     a0, sp");
+#endif
 
         /* Enable FPU (just in case) */
 #ifdef __riscv_flen
@@ -183,8 +220,28 @@ _start(void)
 
 	__asm__(".option	push\n"
                 ".option	norelax\n"
+#ifdef __CHERI_PURE_CAPABILITY__
+                ".option        nocapmode\n"
+                // c0 input reg for cspecialrw means cspecialr
+                "cmove ct0, c0\n"
+                "cspecialw mscratchc, ct0\n"
+                "cspecialr ct0, ddc\n"
+                "cspecialw mtdc, ct0\n"
+
+                // switch into cap-mode
+                "lla t0, 1f\n"
+                "cspecialr ct1, pcc\n"
+                "csetoffset ct0, ct1, t0\n"
+                "li t1, 1\n"
+                "csetflags ct0, ct0, t1\n"
+                "jr.cap ct0\n"
+                "1:\n"
+                ".option        capmode\n"
+                "cllc	csp, __stack\n"
+#else
                 "la	sp, __stack\n"
                 "la	gp, __global_pointer$\n"
+#endif
                 ".option	pop");
 
 #ifdef __riscv_flen
@@ -195,9 +252,14 @@ _start(void)
                 "csrwi	fcsr, 0");
 #endif
 #ifdef CRT0_SEMIHOST
+#ifdef __CHERI_PURE_CAPABILITY__
+        __asm__("cllc   ct0, _trap");
+        __asm__("cspecialrw ct1, mtcc, ct0");
+#else
         __asm__("la     t0, _trap");
         __asm__("csrw   mtvec, t0");
         __asm__("csrr   t1, mtvec");
+#endif
 #endif
         __asm__("j      _cstart");
 }

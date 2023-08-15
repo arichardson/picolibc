@@ -34,15 +34,15 @@
 #
 srcs_machine = [
   'ieeefp.c',
-  'memcpy-asm.S',
-  'memcpy.c',
-  'memmove.S',
-  'memmove-stub.c',
-  'memset.S',
+   # 'memcpy-asm.S',
+   # 'memcpy.c',
+   # 'memmove.S',
+   # 'memmove-stub.c',
+   # 'memset.S',
   'setjmp.S',
-  'strcmp.S',
-  'strcpy.c',
-  'strlen.c',
+   # 'strcmp.S',
+   # 'strcpy.c',
+   # 'strlen.c',
 ]
 
 has_ieeefp_funcs = true

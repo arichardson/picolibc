@@ -345,11 +345,13 @@ SUCH DAMAGE.
 #endif
 
 /*
- * When the address sanitizer is enabled, we must prevent the library
- * from even reading beyond the end of input data. This happens in
- * many optimized string functions.
+ * When targeting CHERI or when the address sanitizer is enabled, we must
+ * prevent the library from even reading beyond the end of input data. This
+ * happens in many optimized string functions.
  */
-#ifdef __has_feature
+#if defined(__CHERI_PURE_CAPABILITY__)
+#define PICOLIBC_NO_OUT_OF_BOUNDS_READS
+#elif defined(__has_feature)
 #if __has_feature(address_sanitizer)
 #define PICOLIBC_NO_OUT_OF_BOUNDS_READS
 #endif

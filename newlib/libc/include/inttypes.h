@@ -290,6 +290,9 @@
 #elif defined (_INTPTR_EQ_LONG)
 # define __PRIPTR(x) __STRINGIFY(l##x)
 # define __SCNPTR(x) __STRINGIFY(l##x)
+#elif defined (_INTPTR_EQ_CHERICAP)
+# define __PRIPTR(x) __STRINGIFY(P##x)
+# define __SCNPTR(x) __STRINGIFY(P##x)
 #else
 # define __PRIPTR(x) __STRINGIFY(x)
 # define __SCNPTR(x) __STRINGIFY(x)

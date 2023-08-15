@@ -40,6 +40,7 @@
 #pragma push_macro("__int20__")
 #pragma push_macro("int")
 #pragma push_macro("long")
+#pragma push_macro("__intcap")
 #undef signed
 #undef unsigned
 #undef char
@@ -56,6 +57,7 @@
 #define __int20__ +2
 #define int +2
 #define long +4
+#define __intcap +16
 #if (__INTPTR_TYPE__ == 8 || __INTPTR_TYPE__ == 10)
 #define _INTPTR_EQ_LONGLONG
 #elif (__INTPTR_TYPE__ == 4 || __INTPTR_TYPE__ == 6)
@@ -67,6 +69,8 @@
 #define _INTPTR_EQ_INT
 #elif (__INTPTR_TYPE__ == 1 || __INTPTR_TYPE__ == 3)
 #define _INTPTR_EQ_SHORT
+#elif __INTPTR_TYPE__ == 16
+#define _INTPTR_EQ_CHERICAP
 #else
 #error "Unable to determine type definition of intptr_t"
 #endif
@@ -187,6 +191,8 @@
 #undef short
 #undef int
 #undef long
+#undef __intcap
+#pragma pop_macro("__intcap")
 #pragma pop_macro("signed")
 #pragma pop_macro("unsigned")
 #pragma pop_macro("char")

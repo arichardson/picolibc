@@ -40,5 +40,9 @@ sys_semihost:
         slli zero, zero, 0x1f
         ebreak
         srai zero, zero, 0x7
+#ifdef __CHERI_PURE_CAPABILITY__
+        cret
+#else
         ret
+#endif
         .option pop
