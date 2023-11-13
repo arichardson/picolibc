@@ -71,7 +71,7 @@ foreach target : targets
 				      libsrcs_target,
 				      install : true,
 				      install_dir : instdir,
-				      pic: false,
+				      pic: get_option('position-independent'),
 				      objects : libobjs,
 				      include_directories: inc,
 				      c_args: value[1] + c_args)
@@ -81,14 +81,14 @@ foreach target : targets
 		 ['empty.c'],
 		 install : true,
 		 install_dir : instdir,
-		 pic: false,
+		 pic: get_option('position-independent'),
                  c_args: value[1] + c_args,
 		 objects : [])
   static_library(libg_name,
 		 ['empty.c'],
 		 install : true,
 		 install_dir : instdir,
-		 pic: false,
+		 pic: get_option('position-independent'),
                  c_args: value[1] + c_args,
 		 objects : [])
 

@@ -52,6 +52,7 @@ foreach target : targets
   set_variable('lib_dummyhost' + target,
 	       static_library(libdummyhost_name,
 			      srcs_dummyhost,
+			      pic: get_option('position-independent'),
 			      install : true,
 			      install_dir : instdir,
 			      include_directories : inc,

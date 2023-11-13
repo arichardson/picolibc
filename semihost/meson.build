@@ -121,6 +121,7 @@ if src_semihost != []
     set_variable('lib_semihost' + target,
 		 static_library(libsemihost_name,
 				src_semihost,
+				pic: get_option('position-independent'),
 				install : true,
 				install_dir : instdir,
 				include_directories : inc,

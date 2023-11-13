@@ -104,7 +104,7 @@ foreach target : targets
   endif
 
   local_lib_cpart_target = static_library(libcpart_name,
-				          pic: false,
+				          pic: get_option('position-independent'),
 				          objects : libobjs,
 					  include_directories: inc,
 					  c_args: value[1] + c_args)

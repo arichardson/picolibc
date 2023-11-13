@@ -83,7 +83,7 @@ foreach target : targets
 
   if libobjs != []
     local_lib_mpart_target = static_library(libmpart_name,
-					    pic: false,
+					    pic: get_option('position-independent'),
 					    objects : libobjs,
 					    include_directories: inc,
 					    c_args: value[1] + c_args)

@@ -92,6 +92,9 @@ option('sanitize-trap-on-error', type: 'boolean', value: false,
 option('use-stdlib', type: 'boolean', value: false,
        description: 'Do not bypass the standard system library with -nostdlib (useful for native testing)')
 
+option('position-independent', type: 'boolean', value: false,
+       description: 'Generate position-indepented (-fPIC) code')
+
 option('profile', type: 'boolean', value: false,
        description: 'Enable profiling by adding -pg -no-pie to compile flags')
 

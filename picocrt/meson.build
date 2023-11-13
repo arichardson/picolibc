@@ -108,7 +108,7 @@ foreach target : targets
                    install_dir : instdir,
 		   c_args : _c_args,
                    objects: get_variable(crt0_name),
-                   pic: false)
+                   pic: get_option('position-independent'))
   endif
 
   # The 'hosted' variant calls 'exit' after return from main (c lingo: hosted execution environment)
@@ -130,7 +130,7 @@ foreach target : targets
 		   include_directories : inc,
                    install : true,
                    install_dir : instdir,
-                   pic: false,
+                   pic: get_option('position-independent'),
                    objects: get_variable(crt0_hosted_name),
 		   c_args : value[1] + ['-DCRT0_EXIT'])
   endif
@@ -154,7 +154,7 @@ foreach target : targets
 		   include_directories : inc,
                    install : true,
                    install_dir : instdir,
-                   pic: false,
+                   pic: get_option('position-independent'),
                    objects: get_variable(crt0_minimal_name),
 		   c_args : _c_args + ['-DCONSTRUCTORS=0'])
   endif
@@ -180,7 +180,7 @@ foreach target : targets
 		     include_directories : inc,
                      install : true,
                      install_dir : instdir,
-                     pic: false,
+                     pic: get_option('position-independent'),
                      objects: get_variable(crt0_semihost_name),
 		     c_args : value[1] + ['-DCRT0_EXIT', '-DCRT0_SEMIHOST'])
     endif

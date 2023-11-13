@@ -265,7 +265,7 @@ foreach target : targets
   set_variable('lib_stdlib' + target,
 	       static_library('stdlib_malloc' + target,
 			      srcs_stdlib_malloc_use,
-			      pic: false,
+			      pic: get_option('position-independent'),
 			      include_directories: inc,
 			      c_args: value[1] + c_args + c_args_malloc))
 

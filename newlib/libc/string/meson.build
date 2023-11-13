@@ -187,7 +187,7 @@ if srcs_strcmp_use != []
     set_variable('lib_string' + target,
 		 static_library('strcmp' + target,
 				srcs_strcmp_use,
-				pic: false,
+				pic: get_option('position-independent'),
 				c_args: value[1] + c_args + cargs_strcmp,
 				include_directories: inc))
   endforeach
