@@ -86,10 +86,46 @@ extern void __libc_init_array(void);
 #define CONSTRUCTORS 1
 #endif
 
+#if __has_feature(capabilities)
+#include <cheri_init_globals.h>
+#include <cheriintrin.h>
+#endif
+
 static inline void
 __start(void)
 {
+#ifndef __CHERI_PURE_CAPABILITY__
     memcpy(__data_start, __data_source, (uintptr_t)__data_size);
+#else
+    /* We can't load global variables for __data_* with CHERI purecap since the
+     * capability table has not been initialized yet, and currently we can only
+     * initialize it after the data has been copied from flash to RAM (since
+     * otherwise that copy would undo the capability relocations. Load the
+     * capabilities needed for memcpy using explicitly pc-relative assembly.
+     */
+    uint8_t *flash_data;
+    uint8_t *start_ram_data;
+    uint8_t *end_ram_data;
+#ifdef __riscv
+    __asm__("cllc %0, __data_start\n\t"
+        "cllc %1, __data_end\n\t"
+        "cllc %2, __data_source\n\t"
+        : "=C"(start_ram_data), "=C"(end_ram_data), "=C"(flash_data));
+#else
+#error Architecture not supported yet
+#endif
+    memcpy(start_ram_data, flash_data, end_ram_data - start_ram_data);
+    /* Data has been copied from flash to ram -> initialize all capabilities. */
+    void *__capability data_cap = cheri_perms_clear(
+        cheri_ddc_get(), CHERI_PERM_EXECUTE | CHERI_PERM_SYSTEM_REGS);
+    const void *__capability rodata_cap =
+        cheri_perms_clear(data_cap, CHERI_PERM_STORE | CHERI_PERM_STORE_CAP |
+                                        CHERI_PERM_STORE_LOCAL_CAP);
+    const void *__capability code_cap = cheri_perms_clear(
+        cheri_pcc_get(),
+        CHERI_PERM_STORE | CHERI_PERM_STORE_CAP | CHERI_PERM_STORE_LOCAL_CAP);
+    cheri_init_globals_3(data_cap, code_cap, rodata_cap);
+#endif
     memset(__bss_start, '\0', (uintptr_t)__bss_size);
 #ifdef PICOLIBC_TLS
     _set_tls(__tls_base);
