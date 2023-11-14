@@ -67,6 +67,9 @@ SECTIONS
 		/* code */
 		*(.text.unlikely .text.unlikely.*)
 		*(.text.startup .text.startup.*)
+		/* Order text sections with weak relocations first so that the
+		 * relocations are within rage to resolve to 0 on RISC-V */
+		*(.text.exit .text.open .text.write)
 		*(.text .text.* .opd .opd.*)
 		*(.gnu.linkonce.t.*)
 		KEEP (*(.fini .fini.*))
