@@ -111,6 +111,13 @@ SECTIONS
 
 	} >flash AT>flash :text
 
+	__cap_relocs : {
+		/* CHERI capability relocations (if present). */
+		PROVIDE_HIDDEN ( @PREFIX@__start___cap_relocs = . );
+		*(__cap_relocs)
+		PROVIDE_HIDDEN ( @PREFIX@__stop___cap_relocs = . );
+	} >flash AT>flash :text
+
 	.data.rel.ro : {
 
 		/* data that needs relocating */
