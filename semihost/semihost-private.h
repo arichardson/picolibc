@@ -68,7 +68,10 @@
 #define SHFB_MAGIC_2	0x46
 #define SHFB_MAGIC_3	0x42
 
-#ifdef __aarch64__
+#ifdef __CHERI_PURE_CAPABILITY__
+/* The QEMU semihosting API currently uses integers not capabilities. */
+typedef size_t sh_param_t;
+#elif defined(__aarch64__)
 typedef unsigned long long int sh_param_t;
 #else
 typedef uintptr_t sh_param_t;
