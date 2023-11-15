@@ -67,6 +67,10 @@ else
     echo "Unknown architecture for $elf: $archstring" >&2
     exit 1
 fi
+if [ "${archstring#*cheri}" != "$archstring" ]; then
+    qemu="${qemu}cheri"
+fi
+
 # The I extension is always required, and since it's the first one there is
 # no preceding _ to match on. Just assume it's always there
 options="i"
