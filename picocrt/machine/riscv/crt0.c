@@ -198,7 +198,12 @@ _trap(void)
                 "csrw	mstatus, t0\n"
                 "csrwi	fcsr, 0");
 #endif
-        __asm__("jal    _ctrap");
+        /* Use a jal instruction to generate the right unwind info. */
+#ifdef __CHERI_PURE_CAPABILITY__
+        __asm__("cjal     _ctrap");
+#else
+        __asm__("jal      _ctrap");
+#endif
 }
 #endif
 
