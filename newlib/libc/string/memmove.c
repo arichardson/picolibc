@@ -51,15 +51,18 @@ QUICKREF
 #include <stdint.h>
 #include "local.h"
 
-/* Nonzero if either X or Y is not aligned on a "long" boundary.  */
-#define UNALIGNED(X, Y) \
-  (((uintptr_t)X & (sizeof (long) - 1)) | ((uintptr_t)Y & (sizeof (long) - 1)))
+/* Copy a pointer-sized type at a time if aligned, otherwise byte-by-byte. */
+typedef uintptr_t elemtype;
+
+/* Nonzero if both X and Y are aligned on a "elemtype" boundary.  */
+#define ALIGNED(X, Y) \
+    (__is_aligned(X, sizeof(elemtype)) && __is_aligned(Y, sizeof(elemtype)))
 
 /* How many bytes are copied each iteration of the 4X unrolled loop.  */
-#define BIGBLOCKSIZE    (sizeof (long) << 2)
+#define BIGBLOCKSIZE    (sizeof (elemtype) * 4)
 
 /* How many bytes are copied each iteration of the word copy loop.  */
-#define LITTLEBLOCKSIZE (sizeof (long))
+#define LITTLEBLOCKSIZE (sizeof (elemtype))
 
 /* Threshhold for punting to the byte copier.  */
 #define TOO_SMALL(LEN)  ((LEN) < BIGBLOCKSIZE)
@@ -73,8 +76,10 @@ memmove (void *dst_void,
 	const void *src_void,
 	size_t length)
 {
-#if defined(PREFER_SIZE_OVER_SPEED) || defined(__OPTIMIZE_SIZE__)
-  char *dst = dst_void;
+  /* The byte-by-byte copy version cannot be used for CHERI since it does not
+   * preserve tag bits. */
+#if (defined(PREFER_SIZE_OVER_SPEED) || defined(__OPTIMIZE_SIZE__)) && !defined(__CHERI_PURE_CAPABILITY__)
+    char *dst = dst_void;
   const char *src = src_void;
 
   if (src < dst && dst < src + length)
@@ -99,14 +104,28 @@ memmove (void *dst_void,
 #else
   char *dst = dst_void;
   const char *src = src_void;
-  long *aligned_dst;
-  const long *aligned_src;
+  elemtype *aligned_dst;
+  const elemtype *aligned_src;
 
   if (src < dst && dst < src + length)
     {
       /* Destructive overlap...have to copy backwards */
       src += length;
       dst += length;
+      if (ALIGNED (src, dst))
+        {
+          elemtype *aligned_dst = (elemtype*)dst;
+          const  elemtype *aligned_src = (elemtype*)src;
+          while (length >= LITTLEBLOCKSIZE)
+            {
+
+              *--aligned_dst = *--aligned_src;
+              length -= LITTLEBLOCKSIZE;
+            }
+          /* Pick up any residual with a byte copier.  */
+          dst = (char*)aligned_dst;
+          src = (char*)aligned_src;
+      }
       while (length--)
 	{
 	  *--dst = *--src;
@@ -117,12 +136,12 @@ memmove (void *dst_void,
       /* Use optimizing algorithm for a non-destructive copy to closely
          match memcpy. If the size is small or either SRC or DST is unaligned,
          then punt into the byte copy loop.  This should be rare.  */
-      if (!TOO_SMALL(length) && !UNALIGNED (src, dst))
+      if (ALIGNED (src, dst))
         {
-          aligned_dst = (long*)dst;
-          aligned_src = (long*)src;
+          aligned_dst = (elemtype*)dst;
+          aligned_src = (elemtype*)src;
 
-          /* Copy 4X long words at a time if possible.  */
+          /* Copy 4X elemtype words at a time if possible.  */
           while (length >= BIGBLOCKSIZE)
             {
               *aligned_dst++ = *aligned_src++;
@@ -132,7 +151,7 @@ memmove (void *dst_void,
               length -= BIGBLOCKSIZE;
             }
 
-          /* Copy one long word at a time if possible.  */
+          /* Copy one elemtype word at a time if possible.  */
           while (length >= LITTLEBLOCKSIZE)
             {
               *aligned_dst++ = *aligned_src++;
