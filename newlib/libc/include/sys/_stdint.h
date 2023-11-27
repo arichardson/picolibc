@@ -83,6 +83,11 @@ typedef __uintptr_t uintptr_t;
 #define _UINTPTR_T_DECLARED
 #endif
 
+#if __has_feature(capabilities)
+typedef __intcap intcap_t;
+typedef unsigned __intcap uintcap_t;
+#endif
+
 #ifdef __cplusplus
 }
 #endif
