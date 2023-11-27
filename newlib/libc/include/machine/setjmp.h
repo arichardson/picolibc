@@ -422,11 +422,15 @@ _BEGIN_STD_C
 #ifdef __riscv
 /* _JBTYPE using long long to make sure the alignment is align to 8 byte,
    otherwise in rv32imafd, store/restore FPR may mis-align.  */
-#define _JBTYPE long long
-#ifdef __riscv_32e
-#define _JBLEN ((4*sizeof(long))/sizeof(long))
+#ifdef __CHERI_PURE_CAPABILITY__
+#define _JBTYPE __intcap
 #else
-#define _JBLEN ((14*sizeof(long) + 12*sizeof(double))/sizeof(long))
+#define _JBTYPE long long
+#endif
+#ifdef __riscv_32e
+#define _JBLEN ((4*sizeof(_JBTYPE))/sizeof(_JBTYPE))
+#else
+#define _JBLEN ((14*sizeof(_JBTYPE) + 12*sizeof(double))/sizeof(_JBTYPE))
 #endif
 #endif
 
