@@ -68,7 +68,7 @@ else
     exit 1
 fi
 if [ "${archstring#*cheri}" != "$archstring" ]; then
-    qemu="${qemu}cheri"
+    qemu="${qemu}cheri -cheri-debugger-on-trap"
 fi
 
 # The I extension is always required, and since it's the first one there is
@@ -161,4 +161,5 @@ mon=none
 
 serial=none
 
+set -x
 echo "$input" | $qemu -chardev $chardev -semihosting-config "$semi" -monitor "$mon" -serial "$serial" -machine "$machine" -cpu "$cpu" -kernel "$elf" -nographic "$@" -bios none
