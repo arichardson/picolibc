@@ -50,8 +50,8 @@ _map_stdio(int fd)
 {
 	if (!_check_done) {
 		_check_done = true;
-		fd_stdout = sys_semihost_open(":tt", 4);
-		fd_stderr = sys_semihost_open(":tt", 8);
+		fd_stdout = sys_semihost_open(":tt", SH_OPEN_W);
+		fd_stderr = sys_semihost_open(":tt", SH_OPEN_A);
 	}
 	switch (fd) {
         case 0:
